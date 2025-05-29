@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { User, AuthState, AuthAction, AuthContextType, UpdateProfileRequest } from '@/types/auth'
 import { authService } from '@/lib/auth-service'
 import { formatError } from '@/lib/utils'
+import { authSyncService } from '@/lib/auth-sync'
 
 // Initial state
 const initialState: AuthState = {
@@ -77,16 +78,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        dispatch({ type: 'AUTH_START' })
+
+        // Try to initialize from extension first, then localStorage
+        const { user, isAuthenticated } = await authSyncService.initializeFromExtension()
+
+        if (isAuthenticated && user) {
+          dispatch({ type: 'AUTH_SUCCESS', payload: user })
+        } else {
+          dispatch({ type: 'AUTH_LOGOUT' })
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error)
+        dispatch({ type: 'AUTH_LOGOUT' })
+      }
+    }
+
     initializeAuth()
   }, [])
 
-  // Set up extension auth listener
+  // Add this to listen for extension auth changes:
   useEffect(() => {
-    authService.setupExtensionAuthListener()
-    
-    // Listen for auth changes from extension
-    const handleAuthChange = (event: CustomEvent) => {
-      const { user, isAuthenticated } = event.detail
+    const handleExtensionAuthChange = (event: CustomEvent) => {
+      const { isAuthenticated, user } = event.detail
+
       if (isAuthenticated && user) {
         dispatch({ type: 'AUTH_SUCCESS', payload: user })
       } else {
@@ -94,10 +111,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
-    window.addEventListener('authChange', handleAuthChange as EventListener)
-    
+    window.addEventListener('extensionAuthChange', handleExtensionAuthChange as EventListener)
+
     return () => {
-      window.removeEventListener('authChange', handleAuthChange as EventListener)
+      window.removeEventListener('extensionAuthChange', handleExtensionAuthChange as EventListener)
     }
   }, [])
 
@@ -117,49 +134,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => clearInterval(interval)
   }, [state.isAuthenticated])
 
-  async function initializeAuth() {
-    try {
-      dispatch({ type: 'AUTH_START' })
-      
-      const { user, isAuthenticated } = authService.initializeFromStorage()
-      
-      if (isAuthenticated && user) {
-        // Verify token is still valid by fetching current user
-        const response = await authService.getCurrentUser()
-        
-        if (response.success && response.data) {
-          dispatch({ type: 'AUTH_SUCCESS', payload: response.data })
-        } else {
-          // Token invalid, try to refresh
-          const refreshResponse = await authService.refreshToken()
-          
-          if (refreshResponse.success && refreshResponse.data) {
-            dispatch({ type: 'AUTH_SUCCESS', payload: refreshResponse.data.user })
-          } else {
-            dispatch({ type: 'AUTH_LOGOUT' })
-          }
-        }
-      } else {
-        dispatch({ type: 'AUTH_LOGOUT' })
-      }
-    } catch (error) {
-      console.error('Failed to initialize auth:', error)
-      dispatch({ type: 'AUTH_LOGOUT' })
-    }
-  }
-
   async function login(email: string, password: string) {
     try {
       dispatch({ type: 'AUTH_START' })
-      
+
       const response = await authService.login({ email, password })
-      
+
       if (response.success && response.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user })
-        
+
         // Notify Chrome extension
         await authService.notifyExtensionAuthSuccess(response.data)
-        
+
         // Redirect to dashboard or intended page
         const returnUrl = new URLSearchParams(window.location.search).get('returnUrl')
         router.push(returnUrl || '/dashboard')
@@ -177,15 +163,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function signup(email: string, password: string, name?: string) {
     try {
       dispatch({ type: 'AUTH_START' })
-      
+
       const response = await authService.register({ email, password, name })
-      
+
       if (response.success && response.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user })
-        
+
         // Notify Chrome extension
         await authService.notifyExtensionAuthSuccess(response.data)
-        
+
         // Redirect to dashboard
         router.push('/dashboard')
       } else {
@@ -202,15 +188,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function logout() {
     try {
       dispatch({ type: 'AUTH_START' })
-      
+
       // Call logout API
       await authService.logout()
-      
+
       // Notify Chrome extension
       await authService.notifyExtensionLogout()
-      
+
       dispatch({ type: 'AUTH_LOGOUT' })
-      
+
       // Redirect to login page
       router.push('/auth/login')
     } catch (error) {
@@ -224,9 +210,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function refreshAuth() {
     try {
       dispatch({ type: 'AUTH_START' })
-      
+
       const response = await authService.refreshToken()
-      
+
       if (response.success && response.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user })
       } else {
@@ -243,13 +229,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function updateProfile(data: UpdateProfileRequest) {
     try {
       dispatch({ type: 'AUTH_START' })
-      
+
       // This would be implemented when you add the profile update endpoint
       // const response = await authService.updateProfile(data)
-      
+
       // For now, just update local state
       dispatch({ type: 'AUTH_UPDATE_USER', payload: data })
-      
+
       // In a real implementation:
       // if (response.success && response.data) {
       //   dispatch({ type: 'AUTH_SUCCESS', payload: response.data })
@@ -291,10 +277,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 // Hook to use auth context
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
-  
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
-  
+
   return context
 }
