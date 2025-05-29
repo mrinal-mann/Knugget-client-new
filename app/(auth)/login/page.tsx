@@ -16,17 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormControl, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 
-
-// Form validation schema
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
-  password: z
-    .string()
-    .min(1, 'Password is required')
-    .min(8, 'Password must be at least 8 characters'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters'),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -38,33 +30,25 @@ export default function LoginPage() {
   const { login, isLoading, error, clearError } = useLogin()
   const [showPassword, setShowPassword] = useState(false)
 
-  // Get return URL and source from query params
   const returnUrl = searchParams.get('returnUrl')
   const source = searchParams.get('source')
+  const extensionId = searchParams.get('extensionId')
   const isFromExtension = source === 'extension'
 
-  // Form setup
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   })
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push(returnUrl || '/dashboard')
     }
   }, [isAuthenticated, authLoading, router, returnUrl])
 
-  // Clear error when form changes
   useEffect(() => {
     if (error) {
-      const timeout = setTimeout(() => {
-        clearError()
-      }, 5000)
+      const timeout = setTimeout(() => clearError(), 5000)
       return () => clearTimeout(timeout)
     }
   }, [error, clearError])
@@ -72,18 +56,62 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password)
-      // Navigation is handled by the auth context
+      
+      // 🔴 CRITICAL FIX: Notify Chrome extension after successful login
+      if (isFromExtension && extensionId) {
+        await notifyExtensionAuthSuccess(extensionId)
+      }
     } catch (err) {
-      // Error is handled by the useLogin hook
       console.error('Login error:', err)
     }
   }
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
+  // 🔴 CRITICAL FIX: Function to notify extension of successful auth
+  const notifyExtensionAuthSuccess = async (extensionId: string) => {
+    try {
+      // Get current auth data
+      const accessToken = localStorage.getItem('sb-access-token') || localStorage.getItem('knugget_access_token')
+      const refreshToken = localStorage.getItem('sb-refresh-token') || localStorage.getItem('knugget_refresh_token')
+      const userData = localStorage.getItem('knugget_user_data')
+      
+      if (!accessToken || !userData) {
+        console.warn('Missing auth data for extension sync')
+        return
+      }
+
+      const user = JSON.parse(userData)
+      
+      // Send message to extension
+      if (chrome?.runtime?.sendMessage) {
+        await chrome.runtime.sendMessage(extensionId, {
+          type: 'KNUGGET_AUTH_SUCCESS',
+          payload: {
+            accessToken,
+            refreshToken,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              credits: user.credits || 10,
+              plan: user.plan || 'FREE',
+            },
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+          },
+        })
+        
+        console.log('✅ Successfully notified extension of auth success')
+        
+        // Show success message and redirect
+        setTimeout(() => {
+          window.close() // Close the login tab if opened by extension
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('❌ Failed to notify extension:', error)
+      // Continue with normal flow even if extension notification fails
+    }
   }
 
-  // Show loading spinner if checking auth state
   if (authLoading) {
     return (
       <div className="auth-container">
@@ -98,7 +126,6 @@ export default function LoginPage() {
     <div className="auth-container">
       <Card className="auth-card">
         <CardHeader className="space-y-4">
-          {/* Back to website link for extension users */}
           {isFromExtension && (
             <Link
               href="/"
@@ -109,14 +136,12 @@ export default function LoginPage() {
             </Link>
           )}
 
-          {/* Logo */}
           <div className="flex justify-center">
             <div className="h-12 w-12 rounded-xl knugget-gradient flex items-center justify-center">
               <span className="text-white font-bold text-xl">K</span>
             </div>
           </div>
 
-          {/* Header */}
           <div className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">
               Welcome back to Knugget
@@ -138,17 +163,14 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
-          {/* Error Alert */}
           {error && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {/* Login Form */}
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email Field */}
               <FormItem>
                 <FormLabel htmlFor="email">Email address</FormLabel>
                 <FormControl>
@@ -164,12 +186,9 @@ export default function LoginPage() {
                     />
                   </div>
                 </FormControl>
-                <FormMessage>
-                  {form.formState.errors.email?.message}
-                </FormMessage>
+                <FormMessage>{form.formState.errors.email?.message}</FormMessage>
               </FormItem>
 
-              {/* Password Field */}
               <FormItem>
                 <FormLabel htmlFor="password">Password</FormLabel>
                 <FormControl>
@@ -185,39 +204,27 @@ export default function LoginPage() {
                     />
                     <button
                       type="button"
-                      onClick={togglePasswordVisibility}
+                      onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       disabled={isLoading}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </FormControl>
-                <FormMessage>
-                  {form.formState.errors.password?.message}
-                </FormMessage>
+                <FormMessage>{form.formState.errors.password?.message}</FormMessage>
               </FormItem>
 
-              {/* Forgot Password Link */}
               <div className="flex justify-end">
                 <Link
-                  href="/auth/reset-password"
+                  href="/auth/forgot-password"
                   className="text-sm text-knugget-600 hover:text-knugget-500 transition-colors"
                 >
                   Forgot your password?
                 </Link>
               </div>
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
@@ -232,7 +239,6 @@ export default function LoginPage() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
-          {/* Divider */}
           <div className="relative w-full">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -244,7 +250,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Sign Up Link */}
           <div className="text-center">
             <Link
               href={`/auth/signup${isFromExtension ? '?source=extension' : ''}${returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
@@ -254,7 +259,6 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Extension Benefits */}
           {isFromExtension && (
             <div className="mt-6 p-4 bg-knugget-50 dark:bg-knugget-950 rounded-lg border border-knugget-200 dark:border-knugget-800">
               <div className="flex items-start space-x-3">
@@ -275,17 +279,12 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
 
-      {/* Footer */}
       <div className="mt-8 text-center text-xs text-muted-foreground">
         <p>
           By signing in, you agree to our{' '}
-          <Link href="/terms" className="underline hover:text-foreground">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="underline hover:text-foreground">
-            Privacy Policy
-          </Link>
+          <Link href="/terms" className="underline hover:text-foreground">Terms of Service</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
         </p>
       </div>
     </div>

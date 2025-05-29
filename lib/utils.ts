@@ -3,16 +3,6 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 // Type declaration for Chrome extension API
-declare global {
-  interface Window {
-    chrome?: {
-      storage?: object
-    }
-  }
-  const chrome: {
-    storage?: object
-  } | undefined
-}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
