@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   User,
@@ -45,8 +44,8 @@ class AuthService {
 
   constructor() {
     // FIXED: Use correct backend API URL
-    this.baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://api.knugget.com/api' 
+    this.baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://api.knugget.com/api'
       : 'http://localhost:3000/api' // Backend API, not frontend
   }
 
@@ -121,7 +120,7 @@ class AuthService {
     const refreshToken = this.getRefreshToken()
 
     const response = await this.makeRequest<void>(AUTH_ENDPOINTS.LOGOUT, {
-      method: 'POST',
+        method: 'POST',
       body: JSON.stringify({ refreshToken }),
     })
 
@@ -347,3 +346,9 @@ class AuthService {
     return { user, isAuthenticated }
   }
 }
+
+// Export the class as default
+export default AuthService
+
+// Also export an instance for convenience
+export const authService = new AuthService()
