@@ -57,7 +57,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password)
       
-      // 🔴 CRITICAL FIX: Notify Chrome extension after successful login
+      // CRITICAL FIX: Notify Chrome extension after successful login
       if (isFromExtension && extensionId) {
         await notifyExtensionAuthSuccess(extensionId)
       }
@@ -66,7 +66,7 @@ export default function LoginPage() {
     }
   }
 
-  // 🔴 CRITICAL FIX: Function to notify extension of successful auth
+  // CRITICAL FIX: Function to notify extension of successful auth
   const notifyExtensionAuthSuccess = async (extensionId: string) => {
     try {
       // Get current auth data

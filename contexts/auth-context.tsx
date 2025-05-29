@@ -1,14 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, AuthState, AuthAction, AuthContextType, UpdateProfileRequest } from '@/types/auth'
+import { AuthState, AuthAction, AuthContextType, UpdateProfileRequest } from '@/types/auth'
 import { authService } from '@/lib/auth-service'
 import { formatError } from '@/lib/utils'
 import { authSyncService } from '@/lib/auth-sync'
 
-// Initial state
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
@@ -16,7 +14,6 @@ const initialState: AuthState = {
   error: null,
 }
 
-// Auth reducer
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'AUTH_START':
@@ -64,10 +61,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
-// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Auth provider component
 interface AuthProviderProps {
   children: ReactNode
 }
@@ -99,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initializeAuth()
   }, [])
 
-  // Add this to listen for extension auth changes:
+  // FIXED: Listen for extension auth changes
   useEffect(() => {
     const handleExtensionAuthChange = (event: CustomEvent) => {
       const { isAuthenticated, user } = event.detail
@@ -143,7 +138,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (response.success && response.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user })
 
-        // Notify Chrome extension
+        // FIXED: Notify Chrome extension
         await authService.notifyExtensionAuthSuccess(response.data)
 
         // Redirect to dashboard or intended page
@@ -169,7 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (response.success && response.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user })
 
-        // Notify Chrome extension
+        // FIXED: Notify Chrome extension
         await authService.notifyExtensionAuthSuccess(response.data)
 
         // Redirect to dashboard
@@ -192,7 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call logout API
       await authService.logout()
 
-      // Notify Chrome extension
+      // FIXED: Notify Chrome extension
       await authService.notifyExtensionLogout()
 
       dispatch({ type: 'AUTH_LOGOUT' })
@@ -229,20 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function updateProfile(data: UpdateProfileRequest) {
     try {
       dispatch({ type: 'AUTH_START' })
-
-      // This would be implemented when you add the profile update endpoint
-      // const response = await authService.updateProfile(data)
-
-      // For now, just update local state
       dispatch({ type: 'AUTH_UPDATE_USER', payload: data })
-
-      // In a real implementation:
-      // if (response.success && response.data) {
-      //   dispatch({ type: 'AUTH_SUCCESS', payload: response.data })
-      // } else {
-      //   dispatch({ type: 'AUTH_ERROR', payload: response.error || 'Update failed' })
-      //   throw new Error(response.error || 'Update failed')
-      // }
     } catch (error) {
       const errorMessage = formatError(error)
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage })
@@ -274,7 +256,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 }
 
-// Hook to use auth context
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
 
