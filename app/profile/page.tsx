@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/profile/page.tsx
 'use client'
 
@@ -57,7 +58,7 @@ export default function ProfilePage() {
 
   // Redirect if not authenticated
   if (!authLoading && !isAuthenticated) {
-    router.push('/auth/login?returnUrl=/profile')
+    router.push('/login?returnUrl=/profile')
     return null
   }
 

@@ -383,7 +383,7 @@ export default function SignupPage() {
           {/* Sign In Link */}
           <div className="text-center">
             <Link
-              href={`/auth/login${isFromExtension ? '?source=extension' : ''}${returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+              href={`/register${isFromExtension ? '?source=extension' : ''}${returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
               className="text-sm text-knugget-600 hover:text-knugget-500 transition-colors font-medium"
             >
               Sign in to your account

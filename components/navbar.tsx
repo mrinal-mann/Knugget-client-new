@@ -29,7 +29,7 @@ export function Navbar({ showAuthButtons = true }: NavbarProps) {
     } catch (error) {
       console.error('Logout error:', error)
       // Force redirect even if logout fails
-      router.push('/auth/login')
+      router.push('/login')
     }
   }
 
@@ -202,7 +202,7 @@ export function Navbar({ showAuthButtons = true }: NavbarProps) {
               </div>
             ) : showAuthButtons ? (
               <div className="flex items-center space-x-3">
-                <Link href="/auth/login" onClick={closeMenus}>
+                <Link href="/login" onClick={closeMenus}>
                   <Button variant="ghost" size="sm">
                     Sign in
                   </Button>
@@ -262,7 +262,7 @@ export function Navbar({ showAuthButtons = true }: NavbarProps) {
 
               {!isAuthenticated && showAuthButtons && (
                 <div className="pt-4 border-t space-y-2">
-                  <Link href="/auth/login" className="block" onClick={closeMenus}>
+                  <Link href="/login" className="block" onClick={closeMenus}>
                     <Button variant="ghost" className="w-full justify-start">
                       Sign in
                     </Button>

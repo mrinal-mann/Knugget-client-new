@@ -277,13 +277,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'AUTH_LOGOUT' })
 
       // Redirect to login page
-      router.push('/auth/login')
+      router.push('/login')
     } catch (error) {
       console.error('❌ Logout error:', error)
       // Force logout locally even if other operations fail
       await clearAuthData()
       dispatch({ type: 'AUTH_LOGOUT' })
-      router.push('/auth/login')
+      router.push('/login')
     }
   }
 
