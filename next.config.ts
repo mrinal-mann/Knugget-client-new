@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -32,11 +34,11 @@ const nextConfig = {
     NEXT_PUBLIC_APP_NAME: 'Knugget AI',
     NEXT_PUBLIC_APP_DESCRIPTION: 'AI-powered YouTube video summarization',
     NEXT_PUBLIC_APP_URL: process.env.NODE_ENV === 'production'
-      ? 'https://knugget.com'
+      ? 'https://knugget-client.vercel.app'
       : 'http://localhost:8000',
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://api.knugget.com'
+        ? 'https://knugget-backend.onrender.com/api'
         : 'http://localhost:3000/api'),
   },
   async headers() {
@@ -68,16 +70,20 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: process.env.NODE_ENV === 'production'
-              ? 'https://knugget.com'
+              ? 'https://knugget-client.vercel.app'
               : '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
+            value: 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
+            value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
           },
         ],
       },
@@ -93,7 +99,7 @@ const nextConfig = {
       },
     ]
   },
-  webpack: (config: any, { buildId, dev, isServer, defaultLoaders, webpack }: any) => {
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
     // Custom webpack configuration
     config.resolve.fallback = {
       ...config.resolve.fallback,
