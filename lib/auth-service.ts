@@ -45,9 +45,7 @@ class AuthService {
 
   constructor() {
     // FIXED: Use correct backend API URL
-    this.baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://knugget-backend.onrender.com/api'
-      : 'https://knugget-backend.onrender.com/api' // Backend API, not frontend
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://knugget-backend.onrender.com/api'
   }
 
   private async makeRequest<T>(
@@ -65,6 +63,7 @@ class AuthService {
           ...options.headers,
         },
         credentials: 'include',
+        mode: 'cors',
         ...options,
       })
 
@@ -121,7 +120,7 @@ class AuthService {
     const refreshToken = this.getRefreshToken()
 
     const response = await this.makeRequest<void>(AUTH_ENDPOINTS.LOGOUT, {
-        method: 'POST',
+      method: 'POST',
       body: JSON.stringify({ refreshToken }),
     })
 
