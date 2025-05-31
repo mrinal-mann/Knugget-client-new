@@ -198,7 +198,8 @@ function LoginPageContent() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Enter your password"
-                      className="pl-10 pr-10"
+                      className="pl-10"
+                      autoComplete="current-password"
                       {...form.register('password')}
                       disabled={isLoading}
                     />

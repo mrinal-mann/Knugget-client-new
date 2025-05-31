@@ -59,6 +59,8 @@ class AuthService {
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin,
           ...(token && { Authorization: `Bearer ${token}` }),
           ...options.headers,
         },
@@ -67,15 +69,15 @@ class AuthService {
         ...options,
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         return {
           success: false,
           error: data.error || `HTTP ${response.status}: ${response.statusText}`,
         }
       }
 
+      const data = await response.json()
       return {
         success: true,
         data: data.data || data,
