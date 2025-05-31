@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormControl, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useSignup } from '@/hooks/use-auth-form'
+import { Suspense } from 'react'
 
 
 // Form validation schema
@@ -46,7 +47,7 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>
 
-export default function SignupPage() {
+function SignupPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
@@ -438,5 +439,19 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container">
+        <div className="flex items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      </div>
+    }>
+      <SignupPageContent />
+    </Suspense>
   )
 }

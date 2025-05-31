@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -23,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
@@ -56,7 +56,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password)
-      
+
       // CRITICAL FIX: Notify Chrome extension after successful login
       if (isFromExtension && extensionId) {
         await notifyExtensionAuthSuccess(extensionId)
@@ -73,14 +73,14 @@ export default function LoginPage() {
       const accessToken = localStorage.getItem('sb-access-token') || localStorage.getItem('knugget_access_token')
       const refreshToken = localStorage.getItem('sb-refresh-token') || localStorage.getItem('knugget_refresh_token')
       const userData = localStorage.getItem('knugget_user_data')
-      
+
       if (!accessToken || !userData) {
         console.warn('Missing auth data for extension sync')
         return
       }
 
       const user = JSON.parse(userData)
-      
+
       // Send message to extension
       if (chrome?.runtime?.sendMessage) {
         await chrome.runtime.sendMessage(extensionId, {
@@ -98,9 +98,9 @@ export default function LoginPage() {
             expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
           },
         })
-        
+
         console.log('✅ Successfully notified extension of auth success')
-        
+
         // Show success message and redirect
         setTimeout(() => {
           window.close() // Close the login tab if opened by extension
@@ -288,5 +288,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container">
+        <div className="flex items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   )
 }

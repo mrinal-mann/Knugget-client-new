@@ -45,8 +45,8 @@ class AuthService {
   constructor() {
     // FIXED: Use correct backend API URL
     this.baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://api.knugget.com/api'
-      : 'http://localhost:3000/api' // Backend API, not frontend
+      ? 'https://knugget-backend.onrender.com/api'
+      : 'https://knugget-backend.onrender.com/api' // Backend API, not frontend
   }
 
   private async makeRequest<T>(

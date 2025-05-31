@@ -91,7 +91,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
         {/* DNS Prefetch */}
-        <link rel="dns-prefetch" href="https://api.knugget.com" />
+        <link rel="dns-prefetch" href="https://knugget-backend.onrender.com" />
 
         {/* Chrome Extension Connection */}
         {process.env.NEXT_PUBLIC_CHROME_EXTENSION_ID && (
