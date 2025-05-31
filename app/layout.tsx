@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:8000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://knugget-client.vercel.app'),
   alternates: {
     canonical: '/',
   },
