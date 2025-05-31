@@ -39,6 +39,7 @@ function getChromeAPI(): ChromeAPI | null {
   return null
 }
 
+
 class AuthService {
   private baseUrl: string
 
